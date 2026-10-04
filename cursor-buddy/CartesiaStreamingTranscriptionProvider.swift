@@ -278,10 +278,16 @@ private nonisolated final class CartesiaStreamingTranscriptionSession: Streaming
                 return
             }
 
-            if self.isAwaitingExplicitFinalTranscript
-                && !self.hasDeliveredFinalTranscript
-                && !self.latestTurnTranscriptText.isEmpty {
-                print("[CartesiaSTT] WebSocket error during finalization, delivering partial transcript: \(reportedError.localizedDescription)")
+            // The turns endpoint closes (1000) right after our `close` frame,
+            // which surfaces as an ENOTCONN receive failure. That teardown is
+            // expected — never report it once we are finalizing or done.
+            if self.hasDeliveredFinalTranscript {
+                print("[CartesiaSTT] post-final teardown error (suppressed): \(reportedError.localizedDescription)")
+                return
+            }
+
+            if self.isAwaitingExplicitFinalTranscript {
+                print("[CartesiaSTT] teardown during finalization, delivering transcript (length \(self.latestTurnTranscriptText.count)): \(reportedError.localizedDescription)")
                 self.deliverFinalTranscriptIfNeeded(self.latestTurnTranscriptText)
                 return
             }
