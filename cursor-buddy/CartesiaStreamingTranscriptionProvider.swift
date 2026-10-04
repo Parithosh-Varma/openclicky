@@ -98,6 +98,7 @@ private nonisolated final class CartesiaStreamingTranscriptionSession: Streaming
     private let audioPCM16Converter = BuddyPCM16AudioConverter(targetSampleRate: targetSampleRate)
 
     private var audioFramesSent = 0
+    private var audioDropCount = 0
     private var hasDeliveredFinalTranscript = false
     private var isAwaitingExplicitFinalTranscript = false
     private var isCancelled = false
@@ -135,12 +136,18 @@ private nonisolated final class CartesiaStreamingTranscriptionSession: Streaming
     func appendAudioBuffer(_ audioBuffer: AVAudioPCMBuffer) {
         guard let audioPCM16Data = audioPCM16Converter.convertToPCM16Data(from: audioBuffer),
               !audioPCM16Data.isEmpty else {
+            audioDropCount += 1
+            if audioDropCount <= 5 {
+                print("[CartesiaSTT] buffer dropped (converter empty #\(audioDropCount)): frames=\(audioBuffer.frameLength) sr=\(audioBuffer.format.sampleRate) ch=\(audioBuffer.format.channelCount)")
+            }
             return
         }
 
         audioFramesSent += 1
         if audioFramesSent == 1 {
             print("[CartesiaSTT] first audio frame sent (\(audioPCM16Data.count) bytes)")
+        } else if audioFramesSent % 100 == 0 {
+            print("[CartesiaSTT] frames sent: \(audioFramesSent)")
         }
         sendAudioData(audioPCM16Data) { [weak self] error in
             print("[CartesiaSTT] audio send error: \(error.localizedDescription)")

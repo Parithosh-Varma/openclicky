@@ -266,6 +266,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     private var transcriptionProvider: any BuddyTranscriptionProvider
     private let audioEngine = AVAudioEngine()
     private var hasInstalledInputTap = false
+    private var inputTapCount = 0
     private var activeTranscriptionSession: (any BuddyStreamingTranscriptionSession)?
     private var activeStartSource: BuddyDictationStartSource?
     private var draftCallbacks: BuddyDictationDraftCallbacks?
@@ -800,10 +801,15 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     private func startAudioCaptureBeforeProviderReady() throws {
         let inputNode = audioEngine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
+        print("BuddyDictationManager: installing input tap — inputFormat sr=\(inputFormat.sampleRate) ch=\(inputFormat.channelCount) frames=\(inputFormat.frameCapacity)")
 
         removeInputTapIfNeeded()
         // Smaller tap buffers lower capture-to-provider handoff latency.
         inputNode.installTap(onBus: 0, bufferSize: 256, format: inputFormat) { [weak self] buffer, _ in
+            self?.inputTapCount += 1
+            if self?.inputTapCount == 1 || (self?.inputTapCount ?? 0) % 200 == 0 {
+                print("BuddyDictationManager: input tap fired #\(self?.inputTapCount ?? 0) frames=\(buffer.frameLength)")
+            }
             if let activeTranscriptionSession = self?.activeTranscriptionSession {
                 activeTranscriptionSession.appendAudioBuffer(buffer)
             } else {
@@ -815,6 +821,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
 
         audioEngine.prepare()
         try audioEngine.start()
+        print("BuddyDictationManager: audio engine started, isRunning=\(audioEngine.isRunning)")
     }
 
     private func bufferAudioUntilTranscriptionProviderReady(_ buffer: AVAudioPCMBuffer) {
