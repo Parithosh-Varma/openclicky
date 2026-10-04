@@ -36,6 +36,7 @@ nonisolated enum AppBundleConfiguration {
     static let userAppLineSpacingDefaultsKey = "openClickyAppLineSpacing"
     static let userAppBoldTextDefaultsKey = "openClickyAppBoldTextEnabled"
     static let userCodexAgentAPIKeyDefaultsKey = "openClickyCodexAgentAPIKey"
+    static let userGroqAPIKeyDefaultsKey = "openClickyGroqAPIKey"
     static let userAssemblyAIAPIKeyDefaultsKey = "openClickyAssemblyAIAPIKey"
     static let userDeepgramAPIKeyDefaultsKey = "openClickyDeepgramAPIKey"
     static let userVoiceTranscriptionProviderDefaultsKey = "openClickyVoiceTranscriptionProvider"
@@ -152,6 +153,13 @@ nonisolated enum AppBundleConfiguration {
             forKey: "OpenAIAPIKey",
             environmentKeys: ["OPENAI_API_KEY"]
         ) ?? localDevelopmentEnvironmentValue(forKey: "OPENAI_API_KEY")
+    }
+
+    static func groqAPIKey() -> String? {
+        userDefaultsValue(forKey: userGroqAPIKeyDefaultsKey) ?? stringValue(
+            forKey: "GroqAPIKey",
+            environmentKeys: ["GROQ_API_KEY"]
+        ) ?? localDevelopmentEnvironmentValue(forKey: "GROQ_API_KEY")
     }
 
     static func gogKeyringPassword() -> String? {
@@ -431,6 +439,7 @@ nonisolated enum AppBundleConfiguration {
         userElevenLabsAPIKeyDefaultsKey,
         userCartesiaAPIKeyDefaultsKey,
         userCodexAgentAPIKeyDefaultsKey,
+        userGroqAPIKeyDefaultsKey,
         userAssemblyAIAPIKeyDefaultsKey,
         userDeepgramAPIKeyDefaultsKey,
         userExternalControlBridgeTokenDefaultsKey

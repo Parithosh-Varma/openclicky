@@ -6,6 +6,7 @@ nonisolated enum OpenClickyModelProvider: String, Equatable {
     case openAI
     case codex
     case deepgram
+    case groq
 
     var displayName: String {
         switch self {
@@ -19,11 +20,15 @@ nonisolated enum OpenClickyModelProvider: String, Equatable {
             return "Codex"
         case .deepgram:
             return "Deepgram"
+        case .groq:
+            return "Groq"
         }
     }
 
     /// Coarse family used by the bubble / notch provider selector.
     /// Realtime speech and Deepgram stay outside this three-way switch.
+    /// Groq rides with the Codex family so the existing Apple/Codex/Claude
+    /// selector keeps working without a fourth chip.
     var voiceBackendFamily: OpenClickyVoiceBackendFamily? {
         switch self {
         case .apple:
@@ -33,6 +38,8 @@ nonisolated enum OpenClickyModelProvider: String, Equatable {
         case .codex:
             return .codex
         case .openAI:
+            return .codex
+        case .groq:
             return .codex
         case .deepgram:
             return nil
@@ -97,6 +104,12 @@ nonisolated enum OpenClickyModelCatalog {
     static let defaultVoiceResponseModelID = defaultSpeechModelID
     static let defaultAnthropicResponseModelID = "fable-5"
     static let defaultCodexActionsModelID = "gpt-5.6-sol"
+    /// Default Groq text model. Verified live via GET
+    /// https://api.groq.com/openai/v1/models.
+    static let defaultGroqResponseModelID = "openai/gpt-oss-20b"
+    /// Only Groq vision-capable model (preview, 131k context, max 3 images).
+    /// Verified against https://console.groq.com/docs/vision.
+    static let defaultGroqVisionModelID = "qwen/qwen3.8-27b"
     /// On-device Apple Foundation Models (macOS 26+ / Apple Intelligence).
     static let appleFoundationModelID = "apple-foundation"
     /// Text/vision model used when a live speech model needs screenshots,
@@ -129,7 +142,10 @@ nonisolated enum OpenClickyModelCatalog {
         OpenClickyModelOption(id: "opus-5", label: "Opus 5", provider: .anthropic, maxOutputTokens: 128_000),
         OpenClickyModelOption(id: "gpt-5.6-sol", label: "GPT-5.6 Sol", provider: .openAI, maxOutputTokens: 128_000),
         OpenClickyModelOption(id: "gpt-5.6-terra", label: "GPT-5.6 Terra", provider: .openAI, maxOutputTokens: 128_000),
-        OpenClickyModelOption(id: "gpt-5.6-luna", label: "GPT-5.6 Luna", provider: .openAI, maxOutputTokens: 128_000)
+        OpenClickyModelOption(id: "gpt-5.6-luna", label: "GPT-5.6 Luna", provider: .openAI, maxOutputTokens: 128_000),
+        OpenClickyModelOption(id: "openai/gpt-oss-120b", label: "Groq GPT-OSS 120B", provider: .groq, maxOutputTokens: 65_536),
+        OpenClickyModelOption(id: "openai/gpt-oss-20b", label: "Groq GPT-OSS 20B", provider: .groq, maxOutputTokens: 65_536),
+        OpenClickyModelOption(id: "qwen/qwen3.8-27b", label: "Groq Qwen 3.8 27B Vision", provider: .groq, maxOutputTokens: 16_384)
     ]
 
     static let speechModels: [OpenClickyModelOption] = [

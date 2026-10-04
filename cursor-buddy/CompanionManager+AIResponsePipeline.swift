@@ -1126,6 +1126,15 @@ extension CompanionManager {
                 code: -20,
                 userInfo: [NSLocalizedDescriptionKey: "Deepgram Voice Agent handles live microphone turns directly; text/screenshot fallback should route through a normal response model."]
             )
+        case .groq:
+            return try await analyzeGroqVoiceResponse(
+                images: images,
+                model: selectedVoiceResponseModel.id,
+                systemPrompt: systemPrompt,
+                conversationHistory: conversationHistory,
+                userPrompt: userPrompt,
+                onTextChunk: onTextChunk
+            )
         case .codex:
             return try await analyzeCodexVoiceResponse(
                 images: images,
@@ -1262,6 +1271,55 @@ extension CompanionManager {
         openAIAPI.model = modelOption.id
         openAIAPI.maxOutputTokens = modelOption.maxOutputTokens
         let (text, _) = try await openAIAPI.analyzeImageStreaming(
+            images: images,
+            systemPrompt: systemPrompt,
+            conversationHistory: conversationHistory,
+            userPrompt: userPrompt,
+            onTextChunk: onTextChunk
+        )
+        return text
+    }
+
+    private func analyzeGroqVoiceResponse(
+        images: [(data: Data, label: String)],
+        model: String,
+        systemPrompt: String,
+        conversationHistory: [(userPlaceholder: String, assistantResponse: String)] = [],
+        userPrompt: String,
+        onTextChunk: @MainActor @Sendable @escaping (String) -> Void
+    ) async throws -> String {
+        // Groq serves an OpenAI-compatible Responses API at
+        // https://api.groq.com/openai/v1/responses (verified against
+        // https://console.groq.com/docs/responses-api). Only
+        // qwen/qwen3.8-27b accepts image inputs
+        // (https://console.groq.com/docs/vision, max 3 images).
+        let modelOption = OpenClickyModelCatalog.voiceResponseModel(withID: model)
+        guard modelOption.provider == .groq else {
+            throw NSError(
+                domain: "GroqAPI",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Selected model \(modelOption.id) is not a Groq model."]
+            )
+        }
+        if !images.isEmpty, modelOption.id != OpenClickyModelCatalog.defaultGroqVisionModelID {
+            throw NSError(
+                domain: "GroqAPI",
+                code: -2,
+                userInfo: [NSLocalizedDescriptionKey: "Groq model \(modelOption.id) does not accept screenshots. Select \(OpenClickyModelCatalog.defaultGroqVisionModelID) for screen-aware replies, or ask without screen context."]
+            )
+        }
+        guard AppBundleConfiguration.groqAPIKey() != nil else {
+            throw NSError(
+                domain: "GroqAPI",
+                code: -3,
+                userInfo: [NSLocalizedDescriptionKey: "Groq is not configured. Set GROQ_API_KEY in ~/.config/openclicky/secrets.env or paste a Groq key in Settings."]
+            )
+        }
+
+        groqAPI.setAPIKey(AppBundleConfiguration.groqAPIKey())
+        groqAPI.model = modelOption.id
+        groqAPI.maxOutputTokens = modelOption.maxOutputTokens
+        let (text, _) = try await groqAPI.analyzeImageStreaming(
             images: images,
             systemPrompt: systemPrompt,
             conversationHistory: conversationHistory,
@@ -1622,7 +1680,7 @@ extension CompanionManager {
             return .codexCLI
         case .openAI:
             return .openAIResponses
-        case .apple, .deepgram:
+        case .apple, .deepgram, .groq:
             return .unsupported
         }
     }
@@ -1666,7 +1724,7 @@ extension CompanionManager {
                 displayWidthInPoints: targetScreenCapture.displayWidthInPoints,
                 displayHeightInPoints: targetScreenCapture.displayHeightInPoints
             )
-        case .apple, .openAI, .deepgram:
+        case .apple, .openAI, .deepgram, .groq:
             return
         }
 

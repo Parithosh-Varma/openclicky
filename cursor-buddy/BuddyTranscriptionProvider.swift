@@ -14,6 +14,7 @@ enum BuddyTranscriptionProviderID: String, CaseIterable, Identifiable {
     case appleSpeech = "apple"
     case assemblyAI = "assemblyai"
     case deepgram = "deepgram"
+    case cartesia = "cartesia"
     case openAI = "openai"
 
     var id: String { rawValue }
@@ -30,6 +31,8 @@ enum BuddyTranscriptionProviderID: String, CaseIterable, Identifiable {
             return "AssemblyAI"
         case .deepgram:
             return "Deepgram"
+        case .cartesia:
+            return "Cartesia"
         case .openAI:
             return "Whisper"
         }
@@ -46,6 +49,8 @@ enum BuddyTranscriptionProviderID: String, CaseIterable, Identifiable {
         case .assemblyAI:
             return "Streaming"
         case .deepgram:
+            return "Streaming"
+        case .cartesia:
             return "Streaming"
         case .openAI:
             return "OpenAI listening"
@@ -136,6 +141,7 @@ enum BuddyTranscriptionProviderFactory {
 
         let assemblyAIProvider = AssemblyAIStreamingTranscriptionProvider()
         let deepgramProvider = DeepgramStreamingTranscriptionProvider()
+        let cartesiaProvider = CartesiaStreamingTranscriptionProvider()
         let openAIProvider = OpenAIAudioTranscriptionProvider()
         let parakeetProvider = OpenClickyParakeetTranscriptionProvider()
 
@@ -161,6 +167,7 @@ enum BuddyTranscriptionProviderFactory {
                 excluding: .parakeet,
                 assemblyAIProvider: assemblyAIProvider,
                 deepgramProvider: deepgramProvider,
+                cartesiaProvider: cartesiaProvider,
                 openAIProvider: openAIProvider,
                 parakeetProvider: parakeetProvider
             )
@@ -185,6 +192,7 @@ enum BuddyTranscriptionProviderFactory {
                 excluding: .assemblyAI,
                 assemblyAIProvider: assemblyAIProvider,
                 deepgramProvider: deepgramProvider,
+                cartesiaProvider: cartesiaProvider,
                 openAIProvider: openAIProvider,
                 parakeetProvider: parakeetProvider
             )
@@ -209,12 +217,38 @@ enum BuddyTranscriptionProviderFactory {
                 excluding: .deepgram,
                 assemblyAIProvider: assemblyAIProvider,
                 deepgramProvider: deepgramProvider,
+                cartesiaProvider: cartesiaProvider,
                 openAIProvider: openAIProvider,
                 parakeetProvider: parakeetProvider
             )
             return ProviderSelection(
                 requestedProviderID: .deepgram,
                 displayedProviderID: .deepgram,
+                provider: fallback.1
+            )
+        }
+
+        if resolvedPreferredProvider == .cartesia {
+            if cartesiaProvider.isConfigured {
+                return ProviderSelection(
+                    requestedProviderID: .cartesia,
+                    displayedProviderID: .cartesia,
+                    provider: cartesiaProvider
+                )
+            }
+
+            print("Transcription: Cartesia preferred but not configured, falling back")
+            let fallback = configuredFallback(
+                excluding: .cartesia,
+                assemblyAIProvider: assemblyAIProvider,
+                deepgramProvider: deepgramProvider,
+                cartesiaProvider: cartesiaProvider,
+                openAIProvider: openAIProvider,
+                parakeetProvider: parakeetProvider
+            )
+            return ProviderSelection(
+                requestedProviderID: .cartesia,
+                displayedProviderID: .cartesia,
                 provider: fallback.1
             )
         }
@@ -233,6 +267,7 @@ enum BuddyTranscriptionProviderFactory {
                 excluding: .openAI,
                 assemblyAIProvider: assemblyAIProvider,
                 deepgramProvider: deepgramProvider,
+                cartesiaProvider: cartesiaProvider,
                 openAIProvider: openAIProvider,
                 parakeetProvider: parakeetProvider
             )
@@ -247,6 +282,7 @@ enum BuddyTranscriptionProviderFactory {
             excluding: nil,
             assemblyAIProvider: assemblyAIProvider,
             deepgramProvider: deepgramProvider,
+            cartesiaProvider: cartesiaProvider,
             openAIProvider: openAIProvider,
             parakeetProvider: parakeetProvider
         )
@@ -261,6 +297,7 @@ enum BuddyTranscriptionProviderFactory {
         excluding excludedProvider: BuddyTranscriptionProviderID?,
         assemblyAIProvider: AssemblyAIStreamingTranscriptionProvider,
         deepgramProvider: DeepgramStreamingTranscriptionProvider,
+        cartesiaProvider: CartesiaStreamingTranscriptionProvider,
         openAIProvider: OpenAIAudioTranscriptionProvider,
         parakeetProvider: OpenClickyParakeetTranscriptionProvider
     ) -> (BuddyTranscriptionProviderID, any BuddyTranscriptionProvider) {
@@ -277,6 +314,11 @@ enum BuddyTranscriptionProviderFactory {
         if excludedProvider != .deepgram, deepgramProvider.isConfigured {
             print("Transcription: using Deepgram as fallback")
             return (.deepgram, deepgramProvider)
+        }
+
+        if excludedProvider != .cartesia, cartesiaProvider.isConfigured {
+            print("Transcription: using Cartesia as fallback")
+            return (.cartesia, cartesiaProvider)
         }
 
         if excludedProvider != .openAI, openAIProvider.isConfigured {

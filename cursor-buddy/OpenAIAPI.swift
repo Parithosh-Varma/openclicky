@@ -6,6 +6,8 @@
 import Foundation
 
 /// OpenAI API helper for screen-aware responses through the Responses API.
+/// The endpoint is configurable so Groq's OpenAI-compatible Responses API
+/// (https://api.groq.com/openai/v1/responses) can reuse the same transport.
 class OpenAIAPI {
     private var apiKey: String?
     private let apiURL: URL
@@ -13,9 +15,12 @@ class OpenAIAPI {
     var maxOutputTokens: Int
     private let session: URLSession
 
-    init(apiKey: String?, model: String = "gpt-5.6-sol", maxOutputTokens: Int = 128_000) {
+    static let defaultResponsesURL = URL(string: "https://api.openai.com/v1/responses")!
+    static let groqResponsesURL = URL(string: "https://api.groq.com/openai/v1/responses")!
+
+    init(apiKey: String?, model: String = "gpt-5.6-sol", maxOutputTokens: Int = 128_000, responsesURL: URL? = nil) {
         self.apiKey = apiKey?.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.apiURL = URL(string: "https://api.openai.com/v1/responses")!
+        self.apiURL = responsesURL ?? Self.defaultResponsesURL
         self.model = model
         self.maxOutputTokens = maxOutputTokens
 

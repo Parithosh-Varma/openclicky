@@ -196,7 +196,8 @@ struct ChatHeaderBar: View {
     session.model = id
     UserDefaults.standard.set(id, forKey: "clickyCodexModel")
     if OpenClickyModelCatalog.voiceResponseModel(withID: id).provider == .apple
-        || OpenClickyModelCatalog.voiceResponseModel(withID: id).provider == .anthropic {
+        || OpenClickyModelCatalog.voiceResponseModel(withID: id).provider == .anthropic
+        || OpenClickyModelCatalog.voiceResponseModel(withID: id).provider == .groq {
       companion.setSelectedModel(id)
     }
   }

@@ -661,6 +661,17 @@ final class CompanionManager: ObservableObject {
         )
     }()
 
+    lazy var groqAPI: OpenAIAPI = {
+        let modelOption = OpenClickyModelCatalog.voiceResponseModel(withID: selectedModel)
+        let groqModel = modelOption.provider == .groq ? modelOption : OpenClickyModelCatalog.voiceResponseModel(withID: OpenClickyModelCatalog.defaultGroqResponseModelID)
+        return OpenAIAPI(
+            apiKey: AppBundleConfiguration.groqAPIKey(),
+            model: groqModel.id,
+            maxOutputTokens: groqModel.maxOutputTokens,
+            responsesURL: OpenAIAPI.groqResponsesURL
+        )
+    }()
+
     lazy var claudeAgentSDKAPI: ClaudeAgentSDKAPI? = {
         let modelOption = OpenClickyModelCatalog.voiceResponseModel(withID: selectedModel)
         return ClaudeAgentSDKAPI(model: modelOption.id, maxOutputTokens: modelOption.maxOutputTokens)
@@ -1832,6 +1843,8 @@ final class CompanionManager: ObservableObject {
             if selectedVoiceResponseModel.provider == .codex || AppBundleConfiguration.openAIAPIKey() == nil {
                 codexVoiceSession.warmUp(systemPrompt: currentVoiceResponseSystemPrompt())
             }
+        case .groq:
+            _ = groqAPI
         case .deepgram:
             deepgramVoiceAgentClient.warmUpConnection()
         }
@@ -1879,6 +1892,9 @@ final class CompanionManager: ObservableObject {
             codexVoiceSession.model = OpenClickyModelCatalog.codexVoiceSessionModel(withID: analysisModel.id).id
         case .codex:
             codexVoiceSession.model = OpenClickyModelCatalog.codexVoiceSessionModel(withID: modelOption.id).id
+        case .groq:
+            groqAPI.model = modelOption.id
+            groqAPI.maxOutputTokens = modelOption.maxOutputTokens
         case .deepgram:
             deepgramVoiceAgentClient.updateConfiguration(
                 apiKey: AppBundleConfiguration.deepgramAPIKey(),
@@ -2187,6 +2203,11 @@ final class CompanionManager: ObservableObject {
         codexAgentSessions.forEach { $0.stop(reason: "api_key_reconfigured") }
     }
 
+    func setGroqAPIKey(_ apiKey: String) {
+        persistOptionalSecret(apiKey, defaultsKey: AppBundleConfiguration.userGroqAPIKeyDefaultsKey)
+        groqAPI.setAPIKey(AppBundleConfiguration.groqAPIKey())
+    }
+
     private func persistOptionalSecret(_ value: String, defaultsKey: String) {
         AppBundleConfiguration.persistSecret(value, defaultsKey: defaultsKey)
     }
@@ -2320,6 +2341,9 @@ final class CompanionManager: ObservableObject {
             if selectedVoiceResponseModel.provider == .codex || AppBundleConfiguration.openAIAPIKey() == nil {
                 codexVoiceSession.warmUp(systemPrompt: currentVoiceResponseSystemPrompt())
             }
+        case .groq:
+            groqAPI.model = selectedVoiceResponseModel.id
+            groqAPI.maxOutputTokens = selectedVoiceResponseModel.maxOutputTokens
         }
         // Force-init the active TTS provider and prime its TLS
         // handshake. The first sentence's TTS request would otherwise
@@ -4307,6 +4331,12 @@ final class CompanionManager: ObservableObject {
             fields["transport"] = "codex_app_server_stdio"
             fields["streamingMethod"] = "codex_app_server_agentMessage_delta"
             fields["apiKeyFallback"] = AppBundleConfiguration.openAIAPIKey() != nil
+        case .groq:
+            fields["executionMethod"] = "OpenAIAPI(groq).analyzeImageStreaming"
+            fields["authMode"] = "groq_api_key_primary"
+            fields["transport"] = "groq_responses_api_sse"
+            fields["streamingMethod"] = "URLSession.bytes"
+            fields["endpoint"] = OpenAIAPI.groqResponsesURL.absoluteString
         }
 
         return fields

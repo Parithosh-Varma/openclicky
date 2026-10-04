@@ -70,19 +70,20 @@ nonisolated enum OpenClickyProviderDiscovery {
             fileManager: fileManager
         ).isEmpty
         let hasOpenAIKey = AppBundleConfiguration.openAIAPIKey() != nil
-        let available = hasExecutable || hasOpenAIKey
+        let hasGroqKey = AppBundleConfiguration.groqAPIKey() != nil
+        let available = hasExecutable || hasOpenAIKey || hasGroqKey
         let detail: String
         if hasExecutable {
             detail = "Codex runtime detected."
-        } else if hasOpenAIKey {
-            detail = "No local Codex binary; OpenAI key can still serve as fallback."
+        } else if hasOpenAIKey || hasGroqKey {
+            detail = "No local Codex binary; OpenAI or Groq key can still serve as fallback."
         } else {
-            detail = "Install Codex or set an OpenAI API key."
+            detail = "Install Codex or set an OpenAI or Groq API key."
         }
         return OpenClickyProviderAvailability(
             family: .codex,
             isAvailable: available,
-            statusLabel: hasExecutable ? "Detected" : (hasOpenAIKey ? "Key only" : "Missing"),
+            statusLabel: hasExecutable ? "Detected" : (hasOpenAIKey || hasGroqKey ? "Key only" : "Missing"),
             detail: detail
         )
     }

@@ -208,6 +208,7 @@ struct OpenClickySettingsView: View {
     @AppStorage(AppBundleConfiguration.userAppBoldTextDefaultsKey) private var appBoldTextEnabled = false
     @AppStorage(AppBundleConfiguration.openClickyVoicePlaybackVolumeDefaultsKey) private var openClickyVoicePlaybackVolume = AppBundleConfiguration.voicePlaybackVolume()
     @State private var userCodexAgentAPIKey = ""
+    @State private var userGroqAPIKey = ""
     @State private var userAssemblyAIAPIKey = ""
     @State private var userDeepgramAPIKey = ""
     @AppStorage(AppBundleConfiguration.userMCPDeveloperDocsEnabledDefaultsKey) private var mcpDeveloperDocsEnabled = false
@@ -369,6 +370,7 @@ struct OpenClickySettingsView: View {
 
     private func loadConfiguredSecretsForEditing() {
         userCodexAgentAPIKey = AppBundleConfiguration.openAIAPIKey() ?? ""
+        userGroqAPIKey = AppBundleConfiguration.groqAPIKey() ?? ""
         userAnthropicAPIKey = AppBundleConfiguration.anthropicAPIKey() ?? ""
         userAssemblyAIAPIKey = AppBundleConfiguration.assemblyAIAPIKey() ?? ""
         userDeepgramAPIKey = AppBundleConfiguration.deepgramAPIKey() ?? ""
@@ -955,7 +957,7 @@ struct OpenClickySettingsView: View {
                 switch provider {
                 case .automatic, .parakeet, .appleSpeech:
                     return true
-                case .assemblyAI, .deepgram, .openAI:
+                case .assemblyAI, .deepgram, .cartesia, .openAI:
                     return false
                 }
             }
@@ -981,10 +983,16 @@ struct OpenClickySettingsView: View {
                 || selectedTranscriptionProviderID == .openAI)
     }
 
+    private var shouldShowGroqKey: Bool {
+        !isLocalVoiceRoute
+            && selectedVoiceModelOption.provider == .groq
+    }
+
     private var shouldShowListeningProviderSecrets: Bool {
         isDeepgramVoiceAgentRoute
             || shouldShowAssemblyAIKey
             || shouldShowDeepgramKey
+            || shouldShowCartesiaListeningKey
     }
 
     private var shouldShowPlaybackProviderSecrets: Bool {
@@ -1003,6 +1011,12 @@ struct OpenClickySettingsView: View {
                 && !isLocalVoiceRoute
                 && (selectedTranscriptionProviderID == .deepgram
                     || companionManager.selectedTTSProvider == .deepgram))
+    }
+
+    private var shouldShowCartesiaListeningKey: Bool {
+        !isRealtimeVoiceRoute
+            && !isLocalVoiceRoute
+            && selectedTranscriptionProviderID == .cartesia
     }
 
     private var shouldShowElevenLabsKey: Bool {
@@ -1024,7 +1038,7 @@ struct OpenClickySettingsView: View {
     }
 
     private var shouldShowCoreProviderKeys: Bool {
-        shouldShowOpenAIKey || shouldShowClaudeKey
+        shouldShowOpenAIKey || shouldShowGroqKey || shouldShowClaudeKey
     }
 
     private var advancedVoiceProviderPanel: some View {
@@ -1300,6 +1314,19 @@ struct OpenClickySettingsView: View {
                         )
                     }
 
+                    if shouldShowGroqKey {
+                        secureFieldRow(
+                            title: "Groq API key",
+                            subtitle: "Used by the selected Groq voice route. Get a key at console.groq.com/keys.",
+                            systemImageName: "key",
+                            placeholder: "Groq key (gsk_...)",
+                            text: Binding(
+                                get: { userGroqAPIKey },
+                                set: { userGroqAPIKey = $0; companionManager.setGroqAPIKey($0) }
+                            )
+                        )
+                    }
+
                     if shouldShowClaudeKey {
                         secureFieldRow(
                             title: "Anthropic API key",
@@ -1380,6 +1407,19 @@ struct OpenClickySettingsView: View {
                             text: Binding(
                                 get: { userDeepgramAPIKey },
                                 set: { userDeepgramAPIKey = $0; companionManager.setDeepgramAPIKey($0) }
+                            )
+                        )
+                    }
+
+                    if shouldShowCartesiaListeningKey {
+                        secureFieldRow(
+                            title: "Cartesia listening key",
+                            subtitle: "Same key as TTS. Used by the selected Cartesia Ink streaming transcription provider.",
+                            systemImageName: "key",
+                            placeholder: "Cartesia key",
+                            text: Binding(
+                                get: { userCartesiaAPIKey },
+                                set: { userCartesiaAPIKey = $0; companionManager.setCartesiaAPIKey($0) }
                             )
                         )
                     }
