@@ -86,7 +86,7 @@ struct cursor_buddyApp: App {
 final class CompanionAppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate, SPUStandardUserDriverDelegate {
     private static let sparkleFeedOverrideDefaultsKey = "OpenClickySparkleFeedURLOverride"
     private var menuBarPanelManager: MenuBarPanelManager?
-    private let companionManager = CompanionManager()
+    private var companionManager: CompanionManager!
     private var sparkleUpdaterController: SPUStandardUpdaterController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -121,11 +121,27 @@ final class CompanionAppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDel
         ClickyAnalytics.trackAppOpened()
         OpenClickyDesktopNotificationCenter.shared.configure()
 
-        menuBarPanelManager = MenuBarPanelManager(companionManager: companionManager)
+        let minimalVoice = AppBundleConfiguration.isMinimalVoiceMode()
+        companionManager = CompanionManager(runtimeMode: minimalVoice ? .minimalVoice : .menuBar)
+        if !minimalVoice {
+            menuBarPanelManager = MenuBarPanelManager(companionManager: companionManager)
+        }
         companionManager.start()
-        companionManager.scheduleWidgetSnapshotPublish()
-        registerAsLoginItemIfNeeded()
-        startSparkleUpdater()
+        if minimalVoice {
+            // Headless: no menu bar, no dock (LSUIElement), so Settings is
+            // otherwise unreachable. Show it once on first launch for
+            // shortcut/permission discovery; afterwards the app is silent.
+            // Reopen anytime with: open "openclicky://settings"
+            // Quit via Activity Monitor or: pkill -x OpenClicky
+            if !companionManager.hasCompletedOnboarding {
+                companionManager.hasCompletedOnboarding = true
+                companionManager.showSettingsWindow()
+            }
+        } else {
+            companionManager.scheduleWidgetSnapshotPublish()
+            registerAsLoginItemIfNeeded()
+            startSparkleUpdater()
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

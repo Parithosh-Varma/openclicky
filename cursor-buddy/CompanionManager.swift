@@ -34,6 +34,9 @@ enum CompanionVoiceState: String {
 enum OpenClickyCompanionRuntimeMode {
     case menuBar
     case embeddedWindow
+    /// Voice-only: no menu-bar icon, no notch pill, no panels, no dock
+    /// windows. Global push-to-talk + transcription + LLM + TTS only.
+    case minimalVoice
 }
 
 struct OpenClickyExternalProxyCursor: Identifiable {

@@ -54,6 +54,7 @@ nonisolated enum AppBundleConfiguration {
     static let userVisualDrawingOverlayToolsEnabledDefaultsKey = "openClickyVisualDrawingOverlayToolsEnabled"
     static let userGmailOAuthToolsEnabledDefaultsKey = "openClickyGmailOAuthToolsEnabled"
     static let userExternalControlBridgeTokenDefaultsKey = "openClickyExternalControlBridgeToken"
+    static let userMinimalVoiceModeDefaultsKey = "openClickyMinimalVoiceMode"
     static let userAgentPlaintextProviderSyncEnabledDefaultsKey = "openClickyAgentPlaintextProviderSyncEnabled"
     static let userDesktopNotificationsEnabledDefaultsKey = "openClickyDesktopNotificationsEnabled"
     static let userAgentCompletionVoiceEnabledDefaultsKey = "openClickyAgentCompletionVoiceEnabled"
@@ -230,6 +231,13 @@ nonisolated enum AppBundleConfiguration {
         return userDefaultsBool(forKey: userGmailOAuthToolsEnabledDefaultsKey, defaultValue: false)
             || environmentValue == "1"
             || environmentValue?.lowercased() == "true"
+    }
+
+    /// Voice-only mode: no menu-bar icon, notch pill, panels, login item,
+    /// widgets, or auto-updates. Global push-to-talk + voice pipeline only.
+    /// Off by default; enabled per-machine via UserDefaults.
+    static func isMinimalVoiceMode() -> Bool {
+        userDefaultsBool(forKey: userMinimalVoiceModeDefaultsKey, defaultValue: false)
     }
 
     static func externalControlBridgeToken() -> String? {
