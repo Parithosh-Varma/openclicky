@@ -801,7 +801,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     private func startAudioCaptureBeforeProviderReady() throws {
         let inputNode = audioEngine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
-        print("BuddyDictationManager: installing input tap — inputFormat sr=\(inputFormat.sampleRate) ch=\(inputFormat.channelCount) frames=\(inputFormat.frameCapacity)")
+        print("BuddyDictationManager: installing input tap — inputFormat sr=\(inputFormat.sampleRate) ch=\(inputFormat.channelCount) commonFormat=\(inputFormat.commonFormat.rawValue)")
 
         removeInputTapIfNeeded()
         // Smaller tap buffers lower capture-to-provider handoff latency.
