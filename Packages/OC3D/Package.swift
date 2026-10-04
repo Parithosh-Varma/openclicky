@@ -10,7 +10,10 @@ import PackageDescription
 let package = Package(
     name: "OC3D",
     platforms: [
-        .macOS(.v10_15)
+        // Floor raised from v10_15: OCTripo uses async
+        // `URLSession.download(from:)`, which needs macOS 12+.
+        // The host app requires macOS 14.2+, so this is safe.
+        .macOS(.v12)
     ],
     products: [
         .library(name: "OC3DCore", targets: ["OC3DCore"]),
