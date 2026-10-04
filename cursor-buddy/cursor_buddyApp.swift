@@ -130,10 +130,13 @@ final class CompanionAppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDel
         if minimalVoice {
             // Headless: no menu bar, no dock (LSUIElement), so Settings is
             // otherwise unreachable. Show it once on first launch for
-            // shortcut/permission discovery; afterwards the app is silent.
+            // shortcut/permission discovery, and again on any launch where
+            // Accessibility is missing (without it the global key is dead).
             // Reopen anytime with: open "openclicky://settings"
             // Quit via Activity Monitor or: pkill -x OpenClicky
-            if !companionManager.hasCompletedOnboarding {
+            if !AXIsProcessTrusted() {
+                companionManager.showSettingsWindow()
+            } else if !companionManager.hasCompletedOnboarding {
                 companionManager.hasCompletedOnboarding = true
                 companionManager.showSettingsWindow()
             }

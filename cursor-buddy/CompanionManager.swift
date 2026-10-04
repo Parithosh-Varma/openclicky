@@ -4374,6 +4374,7 @@ final class CompanionManager: ObservableObject {
     private func handleShortcutTransition(_ transition: BuddyPushToTalkShortcut.ShortcutTransition) {
         switch transition {
         case .pressed:
+            playPushToTalkClick()
             if voiceActivationMode.usesWakeWord {
                 guard !showOnboardingVideo else { return }
                 toggleWakeWordListeningFromShortcut()
@@ -4454,6 +4455,7 @@ final class CompanionManager: ObservableObject {
                 )
             }
         case .released:
+            playPushToTalkClick()
             if voiceActivationMode.usesWakeWord {
                 return
             }
@@ -14427,6 +14429,18 @@ final class CompanionManager: ObservableObject {
         case .idle:
             return false
         }
+    }
+
+    /// Play the bundled push-to-talk click on key press AND release.
+    /// Same NSSound channel approach as the agent-done chime, separate
+    /// from TTS. Doubles as a tap diagnostic: if the click plays, the
+    /// global shortcut monitor is receiving events.
+    private func playPushToTalkClick() {
+        guard let url = Bundle.main.url(forResource: "push-to-talk", withExtension: "mp3"),
+              let sound = NSSound(contentsOf: url, byReference: false) else {
+            return
+        }
+        sound.play()
     }
 
     /// Play the bundled "agent-done" chime via NSSound on a system
